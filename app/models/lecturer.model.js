@@ -32,35 +32,24 @@ const Lecturer = sequelize.define('lecturer', {
     allowNull: true,
   },
   degree: {
-    type: DataTypes.ENUM('Cử Nhân', 'Thạc Sĩ', 'Tiến Sĩ'),
+    type: DataTypes.ENUM('Cử Nhân', 'Kỹ Sư', 'Chuyên Gia', 'Thạc Sĩ', 'Tiến Sĩ', 'Giáo Sư'),
   },
   major: {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  university: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  years_of_experience: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
-  current_position: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  institution: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  bio: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
   photo_url: {
     type: DataTypes.STRING,
     allowNull: true,
+  },
+  photo_degree: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  status: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    default: 0
   },
   account_id: {
     type: DataTypes.INTEGER,

@@ -5,7 +5,7 @@ class departmentService {
   //[GET] departments/
   async index(req, res) {
     try {
-      const { page = 1, limit = 10, search = "" } = req.query;
+      const { page = 1, limit = 100, search = "" } = req.query;
 
       // Validate phân trang
       if (isNaN(page) || isNaN(limit) || page <= 0 || limit <= 0) {

@@ -1,4 +1,5 @@
 const Account = require("../models/account.model.js");
+const Lecturer = require("../models/lecturer.model.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -32,8 +33,15 @@ class authController {
                 return res.status(400).json({ message: "Mật khẩu không đúng" });
             }
 
+            // Tìm giảng viên theo account_id
+            const lecturer = await Lecturer.findOne({
+                where: {
+                    account_id: account.account_id
+                }
+            });
+
             // Tạo JWT
-            const token = jwt.sign({ account_id: account.account_id, role: account.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+            const token = jwt.sign({ account: account.dataValues, lecturer: lecturer.dataValues, role: account.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
             const refreshToken = jwt.sign({ account_id: account.account_id, role: account.role }, JWT_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN });
 
             return res.status(200).json({ message: "Đăng nhập thành công", token, refreshToken });

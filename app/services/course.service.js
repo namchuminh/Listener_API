@@ -3,33 +3,35 @@ const Course = require("../models/course.model.js");
 const Department = require("../models/department.model.js");
 
 class courseService {
-    //[GET] courses/
+    //[GET] courses/:id/index
     async index(req, res) {
         try {
-            const { page = 1, limit = 10, search = "" } = req.query;
-
+            const { id } = req.params;
+            const { page = 1, limit = 1000, search = "" } = req.query;
+    
             // Validate phân trang
             if (isNaN(page) || isNaN(limit) || page <= 0 || limit <= 0) {
                 return res.status(400).json({ message: "Phân trang không hợp lệ!" });
             }
-
-            // Điều kiện tìm kiếm nếu có
-            const searchCondition = search
-                ? {
+    
+            // Điều kiện tìm kiếm và lọc theo department_id
+            const searchCondition = {
+                department_id: id, // Thêm điều kiện department_id = id
+                ...(search && {
                     course_name: {
                         [Op.like]: `%${search}%`,
                     },
-                }
-                : {};
-
+                }),
+            };
+    
             // Tính tổng số lượng khóa học
             const totalCourses = await Course.count({
                 where: searchCondition,
             });
-
+    
             // Tính tổng số trang
             const totalPages = Math.ceil(totalCourses / limit);
-
+    
             // Lấy danh sách khóa học theo phân trang và điều kiện tìm kiếm
             const courses = await Course.findAll({
                 where: searchCondition,
@@ -37,7 +39,7 @@ class courseService {
                 limit: parseInt(limit),
                 order: [['createdAt', 'DESC']]
             });
-
+    
             return res.status(200).json({
                 totalCourses,
                 currentPage: parseInt(page),

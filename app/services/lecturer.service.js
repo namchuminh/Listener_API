@@ -8,7 +8,7 @@ class lecturerService {
     // [GET] lecturers/
     async index(req, res) {
         try {
-            const { page = 1, limit = 10, search = '' } = req.query; // Added search parameter
+            const { page = 1, limit = 1000, search = '' } = req.query; // Added search parameter
             const offset = (page - 1) * limit;
     
             // Search and order by createdAt DESC
@@ -54,6 +54,33 @@ class lecturerService {
         }
     }
 
+    // [PATCH] lecturers/:id/status
+    async status(req, res) {
+        const { id } = req.params;
+
+        // Validate ID
+        if (!id || isNaN(id) || id <= 0) {
+            return res.status(400).json({ message: 'ID giảng viên không hợp lệ!' });
+        }
+
+        try {
+            const lecturer = await Lecturer.findByPk(id);
+            if (!lecturer) {
+                return res.status(404).json({ message: 'Giảng viên không tồn tại!' });
+            }
+
+            // Đổi trạng thái từ 0 thành 1 hoặc từ 1 thành 0
+            lecturer.status = lecturer.status == 0 ? 1 : 0;
+            
+            // Lưu thay đổi
+            await lecturer.save();
+
+            return res.status(200).json({ message: 'Cập nhật trạng thái thành công!', status: lecturer.status });
+        } catch (error) {
+            return res.status(500).json({ message: 'Lỗi máy chủ!', error: error.message });
+        }
+    }
+
     // [POST] lecturers/
     async create(req, res) {
         const {
@@ -65,11 +92,8 @@ class lecturerService {
             address,
             degree,
             major,
-            university,
-            years_of_experience,
-            current_position,
-            institution,
-            bio,
+            username,
+            password
         } = req.body;
 
         // Validate input
@@ -77,7 +101,6 @@ class lecturerService {
             return res.status(400).json({ message: 'Tên giảng viên không hợp lệ!' });
         }
 
-        const { username, password } = req.body;
         if (!username || !password) {
             return res.status(400).json({ message: 'Tên đăng nhập và mật khẩu là bắt buộc!' });
         }
@@ -118,8 +141,9 @@ class lecturerService {
                 password: hashedPassword,
             });
 
-            // Handle photo upload
-            const photoUrl = req.file ? path.join('uploads/lecturer_photos', req.file.filename).replace(/\\/g, '/') : null;
+            // Handle photo uploads
+            const photoUrl = req.files['photo'] ? path.join('uploads/lecturer_photos', req.files['photo'][0].filename).replace(/\\/g, '/') : null;
+            const photoDegreeUrl = req.files['photoDegree'] ? path.join('uploads/lecturer_photos', req.files['photoDegree'][0].filename).replace(/\\/g, '/') : null;
 
             // Create lecturer
             const newLecturer = await Lecturer.create({
@@ -131,20 +155,17 @@ class lecturerService {
                 address,
                 degree,
                 major,
-                university,
-                years_of_experience,
-                current_position,
-                institution,
-                bio,
                 photo_url: photoUrl,
+                photo_degree: photoDegreeUrl, // Lưu đường dẫn ảnh bằng cấp
                 account_id: account.account_id, // Link the lecturer to the created account
             });
 
-            return res.status(201).json({ message: 'Tạo giảng viên thành công!', lecturer: newLecturer });
+            return res.status(201).json({ message: 'Đăng ký thính giảng thành công!', lecturer: newLecturer });
         } catch (error) {
             return res.status(500).json({ message: 'Lỗi máy chủ!', error: error.message });
         }
     }
+
 
 
     async update(req, res) {
