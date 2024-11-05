@@ -1,5 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db.config.js');
+const Lecturer = require('./lecturer.model.js');
+const Course = require('./course.model.js');
 
 const LecturerSchedule = sequelize.define('lecturer_schedule', {
   schedule_id: {
@@ -21,16 +23,12 @@ const LecturerSchedule = sequelize.define('lecturer_schedule', {
       key: 'course_id',
     },
   },
-  semester: {
+  date: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  section: {
     type: DataTypes.STRING,
-    allowNull: true,
-  },
-  start_date: {
-    type: DataTypes.DATEONLY,
-    allowNull: true,
-  },
-  end_date: {
-    type: DataTypes.DATEONLY,
     allowNull: true,
   },
   status: {
@@ -41,5 +39,9 @@ const LecturerSchedule = sequelize.define('lecturer_schedule', {
   tableName: 'lecturer_schedule',
   timestamps: false,
 });
+
+// Thiết lập quan hệ
+LecturerSchedule.belongsTo(Lecturer, { foreignKey: 'lecturer_id', targetKey: 'lecturer_id' });
+LecturerSchedule.belongsTo(Course, { foreignKey: 'course_id', targetKey: 'course_id' });
 
 module.exports = LecturerSchedule;
