@@ -8,7 +8,7 @@ class ScheduleService {
     //[GET] schedules/
     async index(req, res) {
         try {
-            const { week } = req.query;
+            const { week, lecturer_id } = req.query;
             
             const currentYear = new Date().getFullYear();
     
@@ -16,13 +16,22 @@ class ScheduleService {
                 return res.status(400).json({ message: 'Vui lòng cung cấp số tuần!' });
             }
     
+            // Tạo đối tượng điều kiện mặc định
+            const whereCondition = {
+                [Op.and]: [
+                    Sequelize.where(Sequelize.fn('WEEK', Sequelize.col('date'), 1), week),
+                    Sequelize.where(Sequelize.fn('YEAR', Sequelize.col('date')), currentYear),
+                ],
+            };
+    
+            // Nếu có lecturer_id thì thêm vào điều kiện
+            if (lecturer_id) {
+                whereCondition[Op.and].push({ 'lecturer_id': lecturer_id });
+            }
+    
+            // Truy vấn dữ liệu với điều kiện đã xây dựng
             const schedules = await Schedule.findAll({
-                where: {
-                    [Op.and]: [
-                        Sequelize.where(Sequelize.fn('WEEK', Sequelize.col('date'), 1), week),
-                        Sequelize.where(Sequelize.fn('YEAR', Sequelize.col('date')), currentYear),
-                    ],
-                },
+                where: whereCondition,
                 include: [
                     { model: Lecturer, attributes: ['lecturer_id', 'name', 'photo_url'] },
                     { model: Course, attributes: ['course_id', 'course_name'] }
@@ -32,7 +41,7 @@ class ScheduleService {
             // Định nghĩa từ điển chuyển đổi trạng thái
             const statusMapping = {
                 pending: 'Chưa duyệt',
-                approved: 'Đã duyệt',
+                approved: 'Chấp nhận',
                 rejected: 'Từ chối'
             };
     
@@ -58,6 +67,7 @@ class ScheduleService {
     
                 // Đối tượng lịch giảng viên cho mỗi mục
                 const scheduleItem = {
+                    schedule_id: schedule.schedule_id,
                     lecturer_id: schedule.lecturer.lecturer_id,
                     name: schedule.lecturer.name,
                     photo_url: schedule.lecturer.photo_url,
@@ -96,7 +106,7 @@ class ScheduleService {
         } catch (error) {
             return res.status(500).json({ message: 'Lỗi khi lấy danh sách lịch giảng viên!', error: error.message });
         }
-    }    
+    }
     
     //[GET] schedules/:id
     async show(req, res) {
@@ -131,9 +141,7 @@ class ScheduleService {
             }
     
             // Chuyển đổi chuỗi ngày thành đối tượng moment
-            let scheduleDate = moment.tz(date, 'Asia/Ho_Chi_Minh');
-            scheduleDate = scheduleDate.add(1, 'days');
-    
+            let scheduleDate = moment.tz(date, 'Asia/Ho_Chi_Minh');    
             // Định dạng lại ngày để lưu vào cơ sở dữ liệu
             const formattedDate = scheduleDate.format('YYYY-MM-DD HH:mm:ss');
     
@@ -148,6 +156,40 @@ class ScheduleService {
             return res.status(201).json({ message: 'Đã gửi lời mời giảng dạy!', schedule: newSchedule });
         } catch (error) {
             return res.status(500).json({ message: 'Lỗi khi tạo lịch giảng viên!', error: error.message });
+        }
+    }
+
+    // [PATCH] schedules/:id/status
+    async status(req, res) {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        try {
+            // Kiểm tra nếu status không hợp lệ
+            if (!status) {
+                return res.status(400).json({ message: 'Trạng thái không hợp lệ!' });
+            }
+
+            // Tìm lịch giảng viên theo ID
+            const result = await Schedule.findOne({
+                where: { schedule_id: id }
+            });
+
+            if (!result) {
+                return res.status(400).json({ message: 'Lịch giảng viên không tìm thấy!' });
+            }
+
+            // Cập nhật trạng thái mới
+            result.status = status;
+
+            // Lưu lại sự thay đổi
+            await result.save();
+
+            // Trả về thông báo thành công
+            return res.status(200).json({ message: 'Trạng thái lịch giảng viên đã được cập nhật thành công!' });
+        } catch (error) {
+            console.error(error); // Log lỗi để kiểm tra chi tiết
+            return res.status(500).json({ message: 'Lỗi khi cập nhật trạng thái lịch giảng viên!', error: error.message });
         }
     }
 
